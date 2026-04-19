@@ -1,9 +1,4 @@
-"use client";
-
-export const dynamic = "force-dynamic";
-
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 
 const drivers = [
   {
@@ -56,9 +51,13 @@ const drivers = [
   },
 ];
 
-export default function SeniorityPage() {
-  const searchParams = useSearchParams();
-  const activeBadge = searchParams.get("badge");
+export default async function SeniorityPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ badge?: string }>;
+}) {
+  const params = await searchParams;
+  const activeBadge = params.badge ?? null;
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10">
