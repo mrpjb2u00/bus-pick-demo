@@ -19,6 +19,14 @@ const weekdayRuns = [
   "016 - 17 - 7:42 AM to 6:27 PM",
 ];
 
+const weekdayExtras = [
+  "188 - 19 - 5:55 AM to 8:46 AM",
+  "189 - 21 - 6:21 AM to 8:30 AM",
+  "190 - 23 - 6:15 AM to 8:24 AM",
+  "191 - 29 - 5:29 AM to 8:29 AM",
+  "192 - 29 - 5:57 AM to 8:59 AM",
+];
+
 const saturdayRuns = [
   "250 - 21 - 5:10 AM to 2:25 PM",
   "251 - 6 - 6:00 AM to 3:30 PM",
@@ -45,6 +53,13 @@ export default function PickPage() {
   const [selectedWednesday, setSelectedWednesday] = useState("");
   const [selectedThursday, setSelectedThursday] = useState("");
   const [selectedFriday, setSelectedFriday] = useState("");
+
+  const [selectedMondayExtra, setSelectedMondayExtra] = useState("");
+  const [selectedTuesdayExtra, setSelectedTuesdayExtra] = useState("");
+  const [selectedWednesdayExtra, setSelectedWednesdayExtra] = useState("");
+  const [selectedThursdayExtra, setSelectedThursdayExtra] = useState("");
+  const [selectedFridayExtra, setSelectedFridayExtra] = useState("");
+
   const [selectedSaturday, setSelectedSaturday] = useState("");
   const [offDay1, setOffDay1] = useState("");
   const [offDay2, setOffDay2] = useState("");
@@ -54,6 +69,39 @@ export default function PickPage() {
   const disabledDays = useMemo(() => {
     return new Set([offDay1, offDay2].filter(Boolean));
   }, [offDay1, offDay2]);
+
+  const clearSelectionsForDay = (day: string) => {
+    switch (day) {
+      case "Sunday":
+        setSelectedSunday("");
+        break;
+      case "Monday":
+        setSelectedMonday("");
+        setSelectedMondayExtra("");
+        break;
+      case "Tuesday":
+        setSelectedTuesday("");
+        setSelectedTuesdayExtra("");
+        break;
+      case "Wednesday":
+        setSelectedWednesday("");
+        setSelectedWednesdayExtra("");
+        break;
+      case "Thursday":
+        setSelectedThursday("");
+        setSelectedThursdayExtra("");
+        break;
+      case "Friday":
+        setSelectedFriday("");
+        setSelectedFridayExtra("");
+        break;
+      case "Saturday":
+        setSelectedSaturday("");
+        break;
+      default:
+        break;
+    }
+  };
 
   const handleBoardToggle = () => {
     const nextValue = !isBoardOperator;
@@ -68,6 +116,13 @@ export default function PickPage() {
       setSelectedWednesday("");
       setSelectedThursday("");
       setSelectedFriday("");
+
+      setSelectedMondayExtra("");
+      setSelectedTuesdayExtra("");
+      setSelectedWednesdayExtra("");
+      setSelectedThursdayExtra("");
+      setSelectedFridayExtra("");
+
       setSelectedSaturday("");
       setOffDay1("");
       setOffDay2("");
@@ -77,20 +132,44 @@ export default function PickPage() {
   const handleOffDay1Change = (value: string) => {
     setErrorMessage("");
     setSuccessMessage("");
+
+    const previousOffDay1 = offDay1;
+    const currentOffDay2 = offDay2;
+
+    if (value && value === currentOffDay2) {
+      setOffDay2("");
+    }
+
     setOffDay1(value);
 
-    if (value && value === offDay2) {
-      setOffDay2("");
+    if (value) {
+      clearSelectionsForDay(value);
+    }
+
+    if (previousOffDay1 && previousOffDay1 !== value && previousOffDay1 !== currentOffDay2) {
+      // no action needed; day just becomes available again
     }
   };
 
   const handleOffDay2Change = (value: string) => {
     setErrorMessage("");
     setSuccessMessage("");
+
+    const previousOffDay2 = offDay2;
+    const currentOffDay1 = offDay1;
+
+    if (value && value === currentOffDay1) {
+      setOffDay1("");
+    }
+
     setOffDay2(value);
 
-    if (value && value === offDay1) {
-      setOffDay1("");
+    if (value) {
+      clearSelectionsForDay(value);
+    }
+
+    if (previousOffDay2 && previousOffDay2 !== value && previousOffDay2 !== currentOffDay1) {
+      // no action needed; day just becomes available again
     }
   };
 
@@ -234,7 +313,7 @@ export default function PickPage() {
 
             {!isBoardOperator && (
               <p className="mt-3 text-sm text-slate-600">
-                Any selected off days will disable run selection for those days.
+                Any selected off days will disable run selection for those days and clear any existing choices for that day.
               </p>
             )}
           </section>
@@ -289,6 +368,29 @@ export default function PickPage() {
                     </option>
                   ))}
                 </select>
+
+                <label className="mb-2 mt-4 block text-sm font-medium text-emerald-700">
+                  Monday Extra (Optional)
+                </label>
+                <select
+                  value={selectedMondayExtra}
+                  onChange={(e) => {
+                    setSelectedMondayExtra(e.target.value);
+                    setErrorMessage("");
+                    setSuccessMessage("");
+                  }}
+                  disabled={isMondayDisabled}
+                  className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option value="">
+                    {isMondayDisabled ? "Monday extra disabled" : "Select Monday extra"}
+                  </option>
+                  {weekdayExtras.map((extra) => (
+                    <option key={`mon-extra-${extra}`} value={extra}>
+                      {extra}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -311,6 +413,29 @@ export default function PickPage() {
                   {weekdayRuns.map((run) => (
                     <option key={`tue-${run}`} value={run}>
                       {run}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="mb-2 mt-4 block text-sm font-medium text-emerald-700">
+                  Tuesday Extra (Optional)
+                </label>
+                <select
+                  value={selectedTuesdayExtra}
+                  onChange={(e) => {
+                    setSelectedTuesdayExtra(e.target.value);
+                    setErrorMessage("");
+                    setSuccessMessage("");
+                  }}
+                  disabled={isTuesdayDisabled}
+                  className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option value="">
+                    {isTuesdayDisabled ? "Tuesday extra disabled" : "Select Tuesday extra"}
+                  </option>
+                  {weekdayExtras.map((extra) => (
+                    <option key={`tue-extra-${extra}`} value={extra}>
+                      {extra}
                     </option>
                   ))}
                 </select>
@@ -339,6 +464,29 @@ export default function PickPage() {
                     </option>
                   ))}
                 </select>
+
+                <label className="mb-2 mt-4 block text-sm font-medium text-emerald-700">
+                  Wednesday Extra (Optional)
+                </label>
+                <select
+                  value={selectedWednesdayExtra}
+                  onChange={(e) => {
+                    setSelectedWednesdayExtra(e.target.value);
+                    setErrorMessage("");
+                    setSuccessMessage("");
+                  }}
+                  disabled={isWednesdayDisabled}
+                  className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option value="">
+                    {isWednesdayDisabled ? "Wednesday extra disabled" : "Select Wednesday extra"}
+                  </option>
+                  {weekdayExtras.map((extra) => (
+                    <option key={`wed-extra-${extra}`} value={extra}>
+                      {extra}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -364,6 +512,29 @@ export default function PickPage() {
                     </option>
                   ))}
                 </select>
+
+                <label className="mb-2 mt-4 block text-sm font-medium text-emerald-700">
+                  Thursday Extra (Optional)
+                </label>
+                <select
+                  value={selectedThursdayExtra}
+                  onChange={(e) => {
+                    setSelectedThursdayExtra(e.target.value);
+                    setErrorMessage("");
+                    setSuccessMessage("");
+                  }}
+                  disabled={isThursdayDisabled}
+                  className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option value="">
+                    {isThursdayDisabled ? "Thursday extra disabled" : "Select Thursday extra"}
+                  </option>
+                  {weekdayExtras.map((extra) => (
+                    <option key={`thu-extra-${extra}`} value={extra}>
+                      {extra}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="sm:col-span-2">
@@ -386,6 +557,29 @@ export default function PickPage() {
                   {weekdayRuns.map((run) => (
                     <option key={`fri-${run}`} value={run}>
                       {run}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="mb-2 mt-4 block text-sm font-medium text-emerald-700">
+                  Friday Extra (Optional)
+                </label>
+                <select
+                  value={selectedFridayExtra}
+                  onChange={(e) => {
+                    setSelectedFridayExtra(e.target.value);
+                    setErrorMessage("");
+                    setSuccessMessage("");
+                  }}
+                  disabled={isFridayDisabled}
+                  className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option value="">
+                    {isFridayDisabled ? "Friday extra disabled" : "Select Friday extra"}
+                  </option>
+                  {weekdayExtras.map((extra) => (
+                    <option key={`fri-extra-${extra}`} value={extra}>
+                      {extra}
                     </option>
                   ))}
                 </select>
@@ -420,46 +614,21 @@ export default function PickPage() {
             <h2 className="mb-4 text-xl font-bold text-slate-900">Review</h2>
 
             <div className="space-y-3 text-slate-800">
-              <p>
-                <span className="font-semibold">Board / Sub Operator:</span>{" "}
-                {isBoardOperator ? "Yes" : "No"}
-              </p>
-              <p>
-                <span className="font-semibold">Off Day 1:</span>{" "}
-                {offDay1 || "Not selected"}
-              </p>
-              <p>
-                <span className="font-semibold">Off Day 2:</span>{" "}
-                {offDay2 || "Not selected"}
-              </p>
-              <p>
-                <span className="font-semibold">Sunday:</span>{" "}
-                {selectedSunday || "Not selected"}
-              </p>
-              <p>
-                <span className="font-semibold">Monday:</span>{" "}
-                {selectedMonday || "Not selected"}
-              </p>
-              <p>
-                <span className="font-semibold">Tuesday:</span>{" "}
-                {selectedTuesday || "Not selected"}
-              </p>
-              <p>
-                <span className="font-semibold">Wednesday:</span>{" "}
-                {selectedWednesday || "Not selected"}
-              </p>
-              <p>
-                <span className="font-semibold">Thursday:</span>{" "}
-                {selectedThursday || "Not selected"}
-              </p>
-              <p>
-                <span className="font-semibold">Friday:</span>{" "}
-                {selectedFriday || "Not selected"}
-              </p>
-              <p>
-                <span className="font-semibold">Saturday:</span>{" "}
-                {selectedSaturday || "Not selected"}
-              </p>
+              <p><span className="font-semibold">Board / Sub Operator:</span> {isBoardOperator ? "Yes" : "No"}</p>
+              <p><span className="font-semibold">Off Day 1:</span> {offDay1 || "Not selected"}</p>
+              <p><span className="font-semibold">Off Day 2:</span> {offDay2 || "Not selected"}</p>
+              <p><span className="font-semibold">Sunday:</span> {selectedSunday || "Not selected"}</p>
+              <p><span className="font-semibold">Monday:</span> {selectedMonday || "Not selected"}</p>
+              <p><span className="font-semibold">Monday Extra:</span> {selectedMondayExtra || "Not selected"}</p>
+              <p><span className="font-semibold">Tuesday:</span> {selectedTuesday || "Not selected"}</p>
+              <p><span className="font-semibold">Tuesday Extra:</span> {selectedTuesdayExtra || "Not selected"}</p>
+              <p><span className="font-semibold">Wednesday:</span> {selectedWednesday || "Not selected"}</p>
+              <p><span className="font-semibold">Wednesday Extra:</span> {selectedWednesdayExtra || "Not selected"}</p>
+              <p><span className="font-semibold">Thursday:</span> {selectedThursday || "Not selected"}</p>
+              <p><span className="font-semibold">Thursday Extra:</span> {selectedThursdayExtra || "Not selected"}</p>
+              <p><span className="font-semibold">Friday:</span> {selectedFriday || "Not selected"}</p>
+              <p><span className="font-semibold">Friday Extra:</span> {selectedFridayExtra || "Not selected"}</p>
+              <p><span className="font-semibold">Saturday:</span> {selectedSaturday || "Not selected"}</p>
             </div>
 
             {errorMessage && (
