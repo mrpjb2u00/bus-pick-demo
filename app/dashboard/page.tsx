@@ -1,17 +1,14 @@
-"use client";
+import Link from "next/link";
 
-import { useSearchParams } from "next/navigation";
+type Driver = {
+  name: string;
+  rank: number;
+  pickDate: string;
+  pickTime: string;
+  status: string;
+};
 
-const sampleDrivers: Record<
-  string,
-  {
-    name: string;
-    rank: number;
-    pickDate: string;
-    pickTime: string;
-    status: string;
-  }
-> = {
+const sampleDrivers: Record<string, Driver> = {
   "4021": {
     name: "Paul Browner",
     rank: 239,
@@ -35,9 +32,13 @@ const sampleDrivers: Record<
   },
 };
 
-export default function DashboardPage() {
-  const searchParams = useSearchParams();
-  const badge = searchParams.get("badge") || "";
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ badge?: string }>;
+}) {
+  const params = await searchParams;
+  const badge = params.badge ?? "";
 
   const driver = sampleDrivers[badge] || {
     name: "Sample Driver",
@@ -66,28 +67,47 @@ export default function DashboardPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm font-medium text-slate-500">Badge Number</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">{badge || "N/A"}</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">
+                {badge || "N/A"}
+              </p>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm font-medium text-slate-500">Seniority Rank</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">#{driver.rank}</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">
+                #{driver.rank}
+              </p>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm font-medium text-slate-500">Pick Date</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">{driver.pickDate}</p>
+              <p className="mt-1 text-lg font-semibold text-slate-900">
+                {driver.pickDate}
+              </p>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm font-medium text-slate-500">Pick Time</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">{driver.pickTime}</p>
+              <p className="mt-1 text-lg font-semibold text-slate-900">
+                {driver.pickTime}
+              </p>
             </div>
           </div>
 
           <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
             <p className="text-sm font-medium text-slate-500">Status</p>
-            <p className="mt-1 text-lg font-semibold text-slate-900">{driver.status}</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">
+              {driver.status}
+            </p>
+          </div>
+
+          <div className="mt-8">
+            <Link
+              href={`/seniority?badge=${badge}`}
+              className="inline-flex rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800"
+            >
+              View Seniority List
+            </Link>
           </div>
         </div>
       </div>
