@@ -2,13 +2,6 @@
 
 import { useMemo, useState } from "react";
 
-const sundayRuns = [
-  "375 - 21&6 - 5:40 AM to 3:40 PM",
-  "376 - 6 - 6:11 AM to 3:22 PM",
-  "378 - 19&16 - 4:14 AM to 2:06 PM",
-  "381 - 17 - 3:18 AM to 11:36 AM",
-];
-
 const weekdayRuns = [
   "001 - 33&6 - 3:15 AM to 10:51 AM",
   "002 - 21&6 - 4:54 AM to 2:09 PM",
@@ -133,7 +126,6 @@ export default function PickPage() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    const previousOffDay1 = offDay1;
     const currentOffDay2 = offDay2;
 
     if (value && value === currentOffDay2) {
@@ -145,17 +137,12 @@ export default function PickPage() {
     if (value) {
       clearSelectionsForDay(value);
     }
-
-    if (previousOffDay1 && previousOffDay1 !== value && previousOffDay1 !== currentOffDay2) {
-      // no action needed; day just becomes available again
-    }
   };
 
   const handleOffDay2Change = (value: string) => {
     setErrorMessage("");
     setSuccessMessage("");
 
-    const previousOffDay2 = offDay2;
     const currentOffDay1 = offDay1;
 
     if (value && value === currentOffDay1) {
@@ -166,10 +153,6 @@ export default function PickPage() {
 
     if (value) {
       clearSelectionsForDay(value);
-    }
-
-    if (previousOffDay2 && previousOffDay2 !== value && previousOffDay2 !== currentOffDay1) {
-      // no action needed; day just becomes available again
     }
   };
 
@@ -320,25 +303,24 @@ export default function PickPage() {
 
           <section className="rounded-2xl bg-white p-6 shadow-xl">
             <h2 className="mb-4 text-xl font-bold text-pink-700">Sunday Work</h2>
-            <select
-              value={selectedSunday}
-              onChange={(e) => {
-                setSelectedSunday(e.target.value);
-                setErrorMessage("");
-                setSuccessMessage("");
-              }}
-              disabled={isSundayDisabled}
-              className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
-            >
-              <option value="">
-                {isSundayDisabled ? "Sunday disabled" : "Select Sunday run"}
-              </option>
-              {sundayRuns.map((run) => (
-                <option key={run} value={run}>
-                  {run}
-                </option>
-              ))}
-            </select>
+
+            <div className="rounded-xl border border-pink-200 bg-pink-50 p-4">
+              <p className="text-sm font-medium text-slate-600">Selected Sunday Run</p>
+              <p className="mt-2 text-base font-semibold text-slate-900">
+                {selectedSunday || "No Sunday run selected yet"}
+              </p>
+
+              <a
+                href="/pick/sunday"
+                className={`mt-4 inline-flex rounded-lg px-4 py-2 font-semibold text-white ${
+                  isSundayDisabled
+                    ? "pointer-events-none bg-slate-400"
+                    : "bg-pink-600 hover:bg-pink-700"
+                }`}
+              >
+                {isSundayDisabled ? "Sunday Disabled" : "Choose Sunday Run"}
+              </a>
+            </div>
           </section>
 
           <section className="rounded-2xl bg-white p-6 shadow-xl">
