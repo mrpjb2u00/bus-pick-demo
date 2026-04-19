@@ -101,14 +101,21 @@ export default async function DashboardPage({
             </p>
           </div>
 
-          <div className="mt-8">
-            <Link
-              href={`/seniority?badge=${badge}`}
-              className="inline-flex rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800"
-            >
-              View Seniority List
-            </Link>
-          </div>
+          <div className="mt-8 flex flex-wrap gap-3">
+  <Link
+    href={`/seniority?badge=${badge}`}
+    className="inline-flex rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800"
+  >
+    View Seniority List
+  </Link>
+
+  <Link
+    href="/runs/sunday"
+    className="inline-flex rounded-lg bg-pink-600 px-4 py-2 font-semibold text-white hover:bg-pink-700"
+  >
+    View Sunday Run Board
+  </Link>
+</div>
         </div>
       </div>
     </main>
