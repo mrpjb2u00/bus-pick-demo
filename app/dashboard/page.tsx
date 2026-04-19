@@ -113,14 +113,21 @@ export default async function DashboardPage({
     href="/runs/sunday"
     className="inline-flex rounded-lg bg-pink-600 px-4 py-2 font-semibold text-white hover:bg-pink-700"
   >
-    View Sunday Run Board
+    Sunday Board
   </Link>
 
   <Link
     href="/runs/weekday"
     className="inline-flex rounded-lg bg-slate-700 px-4 py-2 font-semibold text-white hover:bg-slate-800"
   >
-    View Weekday Run Board
+    Weekday Board
+  </Link>
+
+  <Link
+    href="/runs/saturday"
+    className="inline-flex rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
+  >
+    Saturday Board
   </Link>
 </div>
         </div>
