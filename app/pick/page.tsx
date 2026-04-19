@@ -2,29 +2,12 @@
 
 import { useMemo, useState } from "react";
 
-const weekdayRuns = [
-  "001 - 33&6 - 3:15 AM to 10:51 AM",
-  "002 - 21&6 - 4:54 AM to 2:09 PM",
-  "004 - 16 - 3:38 AM to 11:29 AM",
-  "005 - 16 - 4:08 AM to 11:59 AM",
-  "006 - 16&19 - 4:36 AM to 4:08 PM",
-  "008 - 16 - 6:00 AM to 4:26 PM",
-  "016 - 17 - 7:42 AM to 6:27 PM",
-];
-
 const weekdayExtras = [
   "188 - 19 - 5:55 AM to 8:46 AM",
   "189 - 21 - 6:21 AM to 8:30 AM",
   "190 - 23 - 6:15 AM to 8:24 AM",
   "191 - 29 - 5:29 AM to 8:29 AM",
   "192 - 29 - 5:57 AM to 8:59 AM",
-];
-
-const saturdayRuns = [
-  "250 - 21 - 5:10 AM to 2:25 PM",
-  "251 - 6 - 6:00 AM to 3:30 PM",
-  "253 - 16 - 5:00 AM to 2:10 PM",
-  "256 - 21&6 - 7:00 AM to 5:10 PM",
 ];
 
 const offDayOptions = [
@@ -331,25 +314,24 @@ export default function PickPage() {
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Monday
                 </label>
-                <select
-                  value={selectedMonday}
-                  onChange={(e) => {
-                    setSelectedMonday(e.target.value);
-                    setErrorMessage("");
-                    setSuccessMessage("");
-                  }}
-                  disabled={isMondayDisabled}
-                  className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
-                >
-                  <option value="">
-                    {isMondayDisabled ? "Monday disabled" : "Select Monday run"}
-                  </option>
-                  {weekdayRuns.map((run) => (
-                    <option key={`mon-${run}`} value={run}>
-                      {run}
-                    </option>
-                  ))}
-                </select>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-medium text-slate-600">Selected Monday Run</p>
+                  <p className="mt-2 text-base font-semibold text-slate-900">
+                    {selectedMonday || "No Monday run selected yet"}
+                  </p>
+
+                  <a
+                    href="/pick/monday"
+                    className={`mt-4 inline-flex rounded-lg px-4 py-2 font-semibold text-white ${
+                      isMondayDisabled
+                        ? "pointer-events-none bg-slate-400"
+                        : "bg-slate-700 hover:bg-slate-800"
+                    }`}
+                  >
+                    {isMondayDisabled ? "Monday Disabled" : "Choose Monday Run"}
+                  </a>
+                </div>
 
                 <label className="mb-2 mt-4 block text-sm font-medium text-emerald-700">
                   Monday Extra (Optional)
@@ -379,25 +361,24 @@ export default function PickPage() {
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Tuesday
                 </label>
-                <select
-                  value={selectedTuesday}
-                  onChange={(e) => {
-                    setSelectedTuesday(e.target.value);
-                    setErrorMessage("");
-                    setSuccessMessage("");
-                  }}
-                  disabled={isTuesdayDisabled}
-                  className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
-                >
-                  <option value="">
-                    {isTuesdayDisabled ? "Tuesday disabled" : "Select Tuesday run"}
-                  </option>
-                  {weekdayRuns.map((run) => (
-                    <option key={`tue-${run}`} value={run}>
-                      {run}
-                    </option>
-                  ))}
-                </select>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-medium text-slate-600">Selected Tuesday Run</p>
+                  <p className="mt-2 text-base font-semibold text-slate-900">
+                    {selectedTuesday || "No Tuesday run selected yet"}
+                  </p>
+
+                  <a
+                    href="/pick/tuesday"
+                    className={`mt-4 inline-flex rounded-lg px-4 py-2 font-semibold text-white ${
+                      isTuesdayDisabled
+                        ? "pointer-events-none bg-slate-400"
+                        : "bg-slate-700 hover:bg-slate-800"
+                    }`}
+                  >
+                    {isTuesdayDisabled ? "Tuesday Disabled" : "Choose Tuesday Run"}
+                  </a>
+                </div>
 
                 <label className="mb-2 mt-4 block text-sm font-medium text-emerald-700">
                   Tuesday Extra (Optional)
@@ -427,25 +408,24 @@ export default function PickPage() {
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Wednesday
                 </label>
-                <select
-                  value={selectedWednesday}
-                  onChange={(e) => {
-                    setSelectedWednesday(e.target.value);
-                    setErrorMessage("");
-                    setSuccessMessage("");
-                  }}
-                  disabled={isWednesdayDisabled}
-                  className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
-                >
-                  <option value="">
-                    {isWednesdayDisabled ? "Wednesday disabled" : "Select Wednesday run"}
-                  </option>
-                  {weekdayRuns.map((run) => (
-                    <option key={`wed-${run}`} value={run}>
-                      {run}
-                    </option>
-                  ))}
-                </select>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-medium text-slate-600">Selected Wednesday Run</p>
+                  <p className="mt-2 text-base font-semibold text-slate-900">
+                    {selectedWednesday || "No Wednesday run selected yet"}
+                  </p>
+
+                  <a
+                    href="/pick/wednesday"
+                    className={`mt-4 inline-flex rounded-lg px-4 py-2 font-semibold text-white ${
+                      isWednesdayDisabled
+                        ? "pointer-events-none bg-slate-400"
+                        : "bg-slate-700 hover:bg-slate-800"
+                    }`}
+                  >
+                    {isWednesdayDisabled ? "Wednesday Disabled" : "Choose Wednesday Run"}
+                  </a>
+                </div>
 
                 <label className="mb-2 mt-4 block text-sm font-medium text-emerald-700">
                   Wednesday Extra (Optional)
@@ -475,25 +455,24 @@ export default function PickPage() {
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Thursday
                 </label>
-                <select
-                  value={selectedThursday}
-                  onChange={(e) => {
-                    setSelectedThursday(e.target.value);
-                    setErrorMessage("");
-                    setSuccessMessage("");
-                  }}
-                  disabled={isThursdayDisabled}
-                  className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
-                >
-                  <option value="">
-                    {isThursdayDisabled ? "Thursday disabled" : "Select Thursday run"}
-                  </option>
-                  {weekdayRuns.map((run) => (
-                    <option key={`thu-${run}`} value={run}>
-                      {run}
-                    </option>
-                  ))}
-                </select>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-medium text-slate-600">Selected Thursday Run</p>
+                  <p className="mt-2 text-base font-semibold text-slate-900">
+                    {selectedThursday || "No Thursday run selected yet"}
+                  </p>
+
+                  <a
+                    href="/pick/thursday"
+                    className={`mt-4 inline-flex rounded-lg px-4 py-2 font-semibold text-white ${
+                      isThursdayDisabled
+                        ? "pointer-events-none bg-slate-400"
+                        : "bg-slate-700 hover:bg-slate-800"
+                    }`}
+                  >
+                    {isThursdayDisabled ? "Thursday Disabled" : "Choose Thursday Run"}
+                  </a>
+                </div>
 
                 <label className="mb-2 mt-4 block text-sm font-medium text-emerald-700">
                   Thursday Extra (Optional)
@@ -523,25 +502,24 @@ export default function PickPage() {
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Friday
                 </label>
-                <select
-                  value={selectedFriday}
-                  onChange={(e) => {
-                    setSelectedFriday(e.target.value);
-                    setErrorMessage("");
-                    setSuccessMessage("");
-                  }}
-                  disabled={isFridayDisabled}
-                  className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
-                >
-                  <option value="">
-                    {isFridayDisabled ? "Friday disabled" : "Select Friday run"}
-                  </option>
-                  {weekdayRuns.map((run) => (
-                    <option key={`fri-${run}`} value={run}>
-                      {run}
-                    </option>
-                  ))}
-                </select>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-medium text-slate-600">Selected Friday Run</p>
+                  <p className="mt-2 text-base font-semibold text-slate-900">
+                    {selectedFriday || "No Friday run selected yet"}
+                  </p>
+
+                  <a
+                    href="/pick/friday"
+                    className={`mt-4 inline-flex rounded-lg px-4 py-2 font-semibold text-white ${
+                      isFridayDisabled
+                        ? "pointer-events-none bg-slate-400"
+                        : "bg-slate-700 hover:bg-slate-800"
+                    }`}
+                  >
+                    {isFridayDisabled ? "Friday Disabled" : "Choose Friday Run"}
+                  </a>
+                </div>
 
                 <label className="mb-2 mt-4 block text-sm font-medium text-emerald-700">
                   Friday Extra (Optional)
@@ -571,25 +549,24 @@ export default function PickPage() {
 
           <section className="rounded-2xl bg-white p-6 shadow-xl">
             <h2 className="mb-4 text-xl font-bold text-blue-700">Saturday Work</h2>
-            <select
-              value={selectedSaturday}
-              onChange={(e) => {
-                setSelectedSaturday(e.target.value);
-                setErrorMessage("");
-                setSuccessMessage("");
-              }}
-              disabled={isSaturdayDisabled}
-              className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 disabled:bg-slate-100 disabled:text-slate-400"
-            >
-              <option value="">
-                {isSaturdayDisabled ? "Saturday disabled" : "Select Saturday run"}
-              </option>
-              {saturdayRuns.map((run) => (
-                <option key={run} value={run}>
-                  {run}
-                </option>
-              ))}
-            </select>
+
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+              <p className="text-sm font-medium text-slate-600">Selected Saturday Run</p>
+              <p className="mt-2 text-base font-semibold text-slate-900">
+                {selectedSaturday || "No Saturday run selected yet"}
+              </p>
+
+              <a
+                href="/pick/saturday"
+                className={`mt-4 inline-flex rounded-lg px-4 py-2 font-semibold text-white ${
+                  isSaturdayDisabled
+                    ? "pointer-events-none bg-slate-400"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {isSaturdayDisabled ? "Saturday Disabled" : "Choose Saturday Run"}
+              </a>
+            </div>
           </section>
 
           <section className="rounded-2xl bg-white p-6 shadow-xl">
