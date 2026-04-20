@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 const weekdayExtras = [
   "188 - 19 - 5:55 AM to 8:46 AM",
@@ -21,6 +22,8 @@ const offDayOptions = [
 ];
 
 export default function PickPage() {
+  const searchParams = useSearchParams();
+
   const [isBoardOperator, setIsBoardOperator] = useState(false);
 
   const [selectedSunday, setSelectedSunday] = useState("");
@@ -41,6 +44,13 @@ export default function PickPage() {
   const [offDay2, setOffDay2] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    const sundayRun = searchParams.get("sundayRun");
+    if (sundayRun) {
+      setSelectedSunday(sundayRun);
+    }
+  }, [searchParams]);
 
   const disabledDays = useMemo(() => {
     return new Set([offDay1, offDay2].filter(Boolean));
