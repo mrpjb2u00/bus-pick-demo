@@ -68,73 +68,98 @@ const mondayRuns = [
 
 export default function MondayPickPage() {
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-10">
+    <main className="min-h-screen bg-slate-100 px-4 py-8 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-700">
               Metro Work Pick Demo
             </p>
-            <h1 className="text-3xl font-bold text-slate-900">
+            <h1 className="mt-2 text-3xl font-bold text-slate-900">
               Choose Monday Run
             </h1>
-            <p className="mt-2 text-slate-700">
-              This dedicated selection page is designed to scale better for larger weekday run lists.
+            <p className="mt-2 max-w-2xl text-slate-700">
+              Select a Monday run for your weekly pick. Later, this page can support
+              search, filters, and full-book browsing.
             </p>
           </div>
 
           <Link
             href="/pick"
-            className="inline-flex rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800"
+            className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800"
           >
             Back to Weekly Pick
           </Link>
         </div>
 
-        <div className="mb-6 rounded-2xl bg-white p-4 shadow-lg">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-sm font-medium text-slate-600">Future Filter</p>
-              <p className="mt-1 font-semibold text-slate-900">Day Runs</p>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-sm font-medium text-slate-600">Future Filter</p>
-              <p className="mt-1 font-semibold text-slate-900">Late Runs</p>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-sm font-medium text-slate-600">Future Filter</p>
-              <p className="mt-1 font-semibold text-slate-900">Split Runs</p>
-            </div>
+        <div className="mb-6 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-sm font-medium text-slate-500">Future Filter</p>
+            <p className="mt-1 text-base font-semibold text-slate-900">Day Runs</p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-sm font-medium text-slate-500">Future Filter</p>
+            <p className="mt-1 text-base font-semibold text-slate-900">Late Runs</p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-sm font-medium text-slate-500">Future Filter</p>
+            <p className="mt-1 text-base font-semibold text-slate-900">Split Runs</p>
           </div>
         </div>
 
         <div className="grid gap-4">
           {mondayRuns.map((run) => {
             const isTaken = run.status.startsWith("Taken");
+            const selectedValue = `${run.run} - ${run.route} - ${run.start} to ${run.end}`;
 
             return (
               <div
                 key={run.run}
-                className="rounded-2xl bg-white p-5 shadow-lg"
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-lg"
               >
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div>
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0">
                     <p className="text-sm font-semibold uppercase tracking-wide text-slate-700">
                       Run {run.run}
                     </p>
+
                     <h2 className="mt-1 text-2xl font-bold text-slate-900">
                       Route {run.route}
                     </h2>
-                    <p className="mt-2 text-slate-700">
-                      {run.start} to {run.end}
+
+                    <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
+                      <div className="rounded-lg bg-slate-50 px-3 py-2">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Start
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-900">{run.start}</p>
+                      </div>
+
+                      <div className="rounded-lg bg-slate-50 px-3 py-2">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                          End
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-900">{run.end}</p>
+                      </div>
+
+                      <div className="rounded-lg bg-slate-50 px-3 py-2">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Total
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-900">{run.total}</p>
+                      </div>
+                    </div>
+
+                    <p className="mt-3 text-sm text-slate-700">
+                      <span className="font-semibold text-slate-900">Type:</span> {run.type}
                     </p>
-                    <p className="text-slate-700">Total: {run.total}</p>
-                    <p className="text-slate-700">Type: {run.type}</p>
                   </div>
 
-                  <div className="flex flex-col gap-3 md:items-end">
+                  <div className="flex flex-col gap-3 lg:min-w-[180px] lg:items-end">
                     <span
-                      className={`rounded-full px-3 py-1 text-sm font-medium ${
+                      className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${
                         isTaken
                           ? "bg-red-100 text-red-700"
                           : "bg-green-100 text-green-700"
@@ -143,16 +168,21 @@ export default function MondayPickPage() {
                       {run.status}
                     </span>
 
-                    <button
-                      disabled={isTaken}
-                      className={`rounded-lg px-4 py-2 font-semibold text-white ${
-                        isTaken
-                          ? "cursor-not-allowed bg-slate-400"
-                          : "bg-slate-700 hover:bg-slate-800"
-                      }`}
-                    >
-                      {isTaken ? "Unavailable" : "Select Run"}
-                    </button>
+                    {isTaken ? (
+                      <button
+                        disabled
+                        className="cursor-not-allowed rounded-lg bg-slate-400 px-4 py-2 font-semibold text-white"
+                      >
+                        Unavailable
+                      </button>
+                    ) : (
+                      <Link
+                        href={`/pick?mondayRun=${encodeURIComponent(selectedValue)}`}
+                        className="inline-flex items-center justify-center rounded-lg bg-slate-700 px-4 py-2 font-semibold text-white hover:bg-slate-800"
+                      >
+                        Select Run
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>

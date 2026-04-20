@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 const weekdayExtras = [
   "188 - 19 - 5:55 AM to 8:46 AM",
@@ -20,55 +20,33 @@ const offDayOptions = [
   "Saturday",
 ];
 
-const STORAGE_KEY = "metro-work-pick-demo";
-
-type PickState = {
-  selectedSunday: string;
-  selectedMonday: string;
-  selectedTuesday: string;
-  selectedWednesday: string;
-  selectedThursday: string;
-  selectedFriday: string;
-  selectedSaturday: string;
-  selectedMondayExtra: string;
-  selectedTuesdayExtra: string;
-  selectedWednesdayExtra: string;
-  selectedThursdayExtra: string;
-  selectedFridayExtra: string;
-  offDay1: string;
-  offDay2: string;
-  isBoardOperator: boolean;
+type PickPageClientProps = {
+  initialSunday: string;
+  initialMonday: string;
+  initialTuesday: string;
+  initialWednesday: string;
+  initialThursday: string;
+  initialFriday: string;
+  initialSaturday: string;
 };
 
-const defaultState: PickState = {
-  selectedSunday: "",
-  selectedMonday: "",
-  selectedTuesday: "",
-  selectedWednesday: "",
-  selectedThursday: "",
-  selectedFriday: "",
-  selectedSaturday: "",
-  selectedMondayExtra: "",
-  selectedTuesdayExtra: "",
-  selectedWednesdayExtra: "",
-  selectedThursdayExtra: "",
-  selectedFridayExtra: "",
-  offDay1: "",
-  offDay2: "",
-  isBoardOperator: false,
-};
-
-export default function PickPage() {
-  const [isLoaded, setIsLoaded] = useState(false);
-
+export default function PickPageClient({
+  initialSunday,
+  initialMonday,
+  initialTuesday,
+  initialWednesday,
+  initialThursday,
+  initialFriday,
+  initialSaturday,
+}: PickPageClientProps) {
   const [isBoardOperator, setIsBoardOperator] = useState(false);
 
-  const [selectedSunday, setSelectedSunday] = useState("");
-  const [selectedMonday, setSelectedMonday] = useState("");
-  const [selectedTuesday, setSelectedTuesday] = useState("");
-  const [selectedWednesday, setSelectedWednesday] = useState("");
-  const [selectedThursday, setSelectedThursday] = useState("");
-  const [selectedFriday, setSelectedFriday] = useState("");
+  const [selectedSunday, setSelectedSunday] = useState(initialSunday);
+  const [selectedMonday, setSelectedMonday] = useState(initialMonday);
+  const [selectedTuesday, setSelectedTuesday] = useState(initialTuesday);
+  const [selectedWednesday, setSelectedWednesday] = useState(initialWednesday);
+  const [selectedThursday, setSelectedThursday] = useState(initialThursday);
+  const [selectedFriday, setSelectedFriday] = useState(initialFriday);
 
   const [selectedMondayExtra, setSelectedMondayExtra] = useState("");
   const [selectedTuesdayExtra, setSelectedTuesdayExtra] = useState("");
@@ -76,84 +54,11 @@ export default function PickPage() {
   const [selectedThursdayExtra, setSelectedThursdayExtra] = useState("");
   const [selectedFridayExtra, setSelectedFridayExtra] = useState("");
 
-  const [selectedSaturday, setSelectedSaturday] = useState("");
+  const [selectedSaturday, setSelectedSaturday] = useState(initialSaturday);
   const [offDay1, setOffDay1] = useState("");
   const [offDay2, setOffDay2] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-
-    if (saved) {
-      try {
-        const parsed: PickState = JSON.parse(saved);
-
-        setSelectedSunday(parsed.selectedSunday || "");
-        setSelectedMonday(parsed.selectedMonday || "");
-        setSelectedTuesday(parsed.selectedTuesday || "");
-        setSelectedWednesday(parsed.selectedWednesday || "");
-        setSelectedThursday(parsed.selectedThursday || "");
-        setSelectedFriday(parsed.selectedFriday || "");
-        setSelectedSaturday(parsed.selectedSaturday || "");
-
-        setSelectedMondayExtra(parsed.selectedMondayExtra || "");
-        setSelectedTuesdayExtra(parsed.selectedTuesdayExtra || "");
-        setSelectedWednesdayExtra(parsed.selectedWednesdayExtra || "");
-        setSelectedThursdayExtra(parsed.selectedThursdayExtra || "");
-        setSelectedFridayExtra(parsed.selectedFridayExtra || "");
-
-        setOffDay1(parsed.offDay1 || "");
-        setOffDay2(parsed.offDay2 || "");
-        setIsBoardOperator(parsed.isBoardOperator || false);
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    }
-
-    setIsLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isLoaded) return;
-
-    const stateToSave: PickState = {
-      selectedSunday,
-      selectedMonday,
-      selectedTuesday,
-      selectedWednesday,
-      selectedThursday,
-      selectedFriday,
-      selectedSaturday,
-      selectedMondayExtra,
-      selectedTuesdayExtra,
-      selectedWednesdayExtra,
-      selectedThursdayExtra,
-      selectedFridayExtra,
-      offDay1,
-      offDay2,
-      isBoardOperator,
-    };
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-  }, [
-    isLoaded,
-    selectedSunday,
-    selectedMonday,
-    selectedTuesday,
-    selectedWednesday,
-    selectedThursday,
-    selectedFriday,
-    selectedSaturday,
-    selectedMondayExtra,
-    selectedTuesdayExtra,
-    selectedWednesdayExtra,
-    selectedThursdayExtra,
-    selectedFridayExtra,
-    offDay1,
-    offDay2,
-    isBoardOperator,
-  ]);
 
   const disabledDays = useMemo(() => {
     return new Set([offDay1, offDay2].filter(Boolean));
@@ -319,62 +224,19 @@ export default function PickPage() {
     setSuccessMessage("Weekly pick is valid and ready for submission.");
   };
 
-  const clearEntirePick = () => {
-    localStorage.removeItem(STORAGE_KEY);
-
-    setSelectedSunday("");
-    setSelectedMonday("");
-    setSelectedTuesday("");
-    setSelectedWednesday("");
-    setSelectedThursday("");
-    setSelectedFriday("");
-    setSelectedSaturday("");
-
-    setSelectedMondayExtra("");
-    setSelectedTuesdayExtra("");
-    setSelectedWednesdayExtra("");
-    setSelectedThursdayExtra("");
-    setSelectedFridayExtra("");
-
-    setOffDay1("");
-    setOffDay2("");
-    setIsBoardOperator(false);
-    setErrorMessage("");
-    setSuccessMessage("");
-  };
-
-  if (!isLoaded) {
-    return (
-      <main className="min-h-screen bg-slate-100 px-4 py-10">
-        <div className="mx-auto max-w-5xl rounded-2xl bg-white p-8 shadow-xl">
-          <p className="text-slate-700">Loading weekly pick...</p>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">
-              Metro Work Pick Demo
-            </p>
-            <h1 className="text-3xl font-bold text-slate-900">
-              Weekly Pick Builder
-            </h1>
-            <p className="mt-2 text-slate-600">
-              Choose board status, off days, then select your work for the remaining days.
-            </p>
-          </div>
-
-          <button
-            onClick={clearEntirePick}
-            className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700"
-          >
-            Clear Pick
-          </button>
+        <div className="mb-6">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">
+            Metro Work Pick Demo
+          </p>
+          <h1 className="text-3xl font-bold text-slate-900">
+            Weekly Pick Builder
+          </h1>
+          <p className="mt-2 text-slate-600">
+            Choose board status, off days, then select your work for the remaining days.
+          </p>
         </div>
 
         <div className="grid gap-6">
