@@ -1,143 +1,238 @@
-import Link from "next/link";
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 type Driver = {
-  name: string;
-  rank: number;
-  pickDate: string;
-  pickTime: string;
-  status: string;
+  id: string;
+  badge_number: string;
+  full_name: string;
+  garage: "QG" | "BH";
+  hire_date: string;
+  role: string;
+  is_active: boolean;
 };
 
-const sampleDrivers: Record<string, Driver> = {
-  "4021": {
-    name: "Paul Browner",
-    rank: 239,
-    pickDate: "Wednesday, April 29, 2026",
-    pickTime: "2:15 PM",
-    status: "Not Started",
-  },
-  "4908": {
-    name: "Eugene Butler",
-    rank: 232,
-    pickDate: "Wednesday, April 29, 2026",
-    pickTime: "10:40 AM",
-    status: "Not Started",
-  },
-  "5235": {
-    name: "Kenneth Brooks",
-    rank: 213,
-    pickDate: "Tuesday, April 28, 2026",
-    pickTime: "11:55 AM",
-    status: "Submitted",
-  },
-};
+export default function DashboardPage() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ badge?: string }>;
-}) {
-  const params = await searchParams;
-  const badge = params.badge ?? "";
+  const [badgeNumber, setBadgeNumber] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [garage, setGarage] = useState<"QG" | "BH">("QG");
+  const [hireDate, setHireDate] = useState("");
+  const [message, setMessage] = useState("");
 
-  const driver = sampleDrivers[badge] || {
-    name: "Sample Driver",
-    rank: 999,
-    pickDate: "To Be Assigned",
-    pickTime: "To Be Assigned",
-    status: "Unknown",
-  };
+  useEffect(() => {
+    const user = localStorage.getItem("currentUser");
+    if (user) setCurrentUser(JSON.parse(user));
+
+    loadDrivers();
+  }, []);
+
+  async function loadDrivers() {
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("drivers")
+      .select("*")
+      .eq("is_active", true)
+      .not("full_name", "is", null)
+      .neq("full_name", "")
+      .order("hire_date", { ascending: true })
+      .order("full_name", { ascending: true });
+
+    if (error) {
+      setMessage(error.message);
+      setDrivers([]);
+    } else {
+      setDrivers((data ?? []) as Driver[]);
+    }
+
+    setLoading(false);
+  }
+
+  async function addDriver(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setMessage("");
+
+    if (!badgeNumber.trim() || !fullName.trim() || !hireDate) {
+      setMessage("Please fill out all driver fields.");
+      return;
+    }
+
+    const { error } = await supabase.from("drivers").insert({
+      badge_number: badgeNumber.trim(),
+      full_name: fullName.trim(),
+      garage,
+      hire_date: hireDate,
+      role: "driver",
+      is_active: true,
+    });
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setBadgeNumber("");
+    setFullName("");
+    setGarage("QG");
+    setHireDate("");
+    setMessage("Driver added successfully.");
+    loadDrivers();
+  }
+
+  async function deleteDriver(id: string, badgeNumber: string) {
+    if (badgeNumber === "4021") {
+      setMessage("The clerk/admin account cannot be deleted.");
+      return;
+    }
+
+    const confirmed = confirm("Delete this driver?");
+    if (!confirmed) return;
+
+    const { error } = await supabase.from("drivers").delete().eq("id", id);
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage("Driver deleted successfully.");
+    loadDrivers();
+  }
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-10">
-      <div className="mx-auto max-w-4xl">
-        <div className="rounded-2xl bg-white p-8 shadow-xl">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">
-            Driver Dashboard
+    <main className="min-h-screen bg-slate-100 p-4 text-slate-900 sm:p-6">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <section className="rounded-2xl bg-white p-6 shadow">
+          <h1 className="text-2xl font-bold">Clerk Dashboard</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Logged in as: {currentUser?.name || "Unknown"}
           </p>
+        </section>
 
-          <h1 className="mb-2 text-3xl font-bold text-slate-900">
-            Welcome, {driver.name}
-          </h1>
+        <section className="grid gap-4 sm:grid-cols-2">
+          <a
+            href="/runs"
+            className="rounded-xl bg-blue-600 p-4 font-bold text-white shadow hover:bg-blue-700"
+          >
+            View Runs / Pick Board
+          </a>
 
-          <p className="mb-8 text-slate-600">
-            This is the sample dashboard for the Metro Work Pick Demo.
-          </p>
+          <a
+            href="/seniority"
+            className="rounded-xl bg-slate-900 p-4 font-bold text-white shadow hover:bg-slate-800"
+          >
+            View Seniority List
+          </a>
+        </section>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-sm font-medium text-slate-500">Badge Number</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">
-                {badge || "N/A"}
-              </p>
-            </div>
+        <section className="rounded-2xl bg-white p-6 shadow">
+          <h2 className="text-xl font-bold">Add Driver</h2>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-sm font-medium text-slate-500">Seniority Rank</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">
-                #{driver.rank}
-              </p>
-            </div>
+          <form onSubmit={addDriver} className="mt-4 grid gap-4 sm:grid-cols-2">
+            <input
+              value={badgeNumber}
+              onChange={(e) => setBadgeNumber(e.target.value)}
+              placeholder="Badge Number"
+              className="rounded-xl border border-slate-300 bg-white p-3 text-slate-900"
+            />
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-sm font-medium text-slate-500">Pick Date</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">
-                {driver.pickDate}
-              </p>
-            </div>
+            <input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Full Name"
+              className="rounded-xl border border-slate-300 bg-white p-3 text-slate-900"
+            />
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-sm font-medium text-slate-500">Pick Time</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">
-                {driver.pickTime}
-              </p>
-            </div>
-          </div>
+            <select
+              value={garage}
+              onChange={(e) => setGarage(e.target.value as "QG" | "BH")}
+              className="rounded-xl border border-slate-300 bg-white p-3 text-slate-900"
+            >
+              <option value="QG">Queensgate</option>
+              <option value="BH">Bond Hill</option>
+            </select>
 
-          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
-            <p className="text-sm font-medium text-slate-500">Status</p>
-            <p className="mt-1 text-lg font-semibold text-slate-900">
-              {driver.status}
+            <input
+              type="date"
+              value={hireDate}
+              onChange={(e) => setHireDate(e.target.value)}
+              className="rounded-xl border border-slate-300 bg-white p-3 text-slate-900"
+            />
+
+            <button
+              type="submit"
+              className="col-span-full rounded-xl bg-green-600 p-3 font-bold text-white hover:bg-green-700"
+            >
+              Add Driver
+            </button>
+          </form>
+
+          {message && (
+            <p className="mt-4 rounded-xl bg-slate-100 p-3 text-sm font-semibold text-slate-700">
+              {message}
             </p>
-          </div>
+          )}
+        </section>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-  <Link
-    href={`/seniority?badge=${badge}`}
-    className="inline-flex rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800"
-  >
-    View Seniority List
-  </Link>
+        <section className="rounded-2xl bg-white p-6 shadow">
+          <h2 className="text-xl font-bold">Seniority List</h2>
 
-  <Link
-    href="/runs/sunday"
-    className="inline-flex rounded-lg bg-pink-600 px-4 py-2 font-semibold text-white hover:bg-pink-700"
-  >
-    Sunday Board
-  </Link>
+          {loading ? (
+            <p className="mt-4 text-slate-600">Loading drivers...</p>
+          ) : drivers.length === 0 ? (
+            <p className="mt-4 text-slate-600">No drivers added yet.</p>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[760px] text-sm">
+                <thead>
+                  <tr className="border-b text-left text-slate-600">
+                    <th className="p-2">#</th>
+                    <th className="p-2">Name</th>
+                    <th className="p-2">Badge</th>
+                    <th className="p-2">Garage</th>
+                    <th className="p-2">Hire Date</th>
+                    <th className="p-2">Role</th>
+                    <th className="p-2">Actions</th>
+                  </tr>
+                </thead>
 
-  <Link
-    href="/runs/weekday"
-    className="inline-flex rounded-lg bg-slate-700 px-4 py-2 font-semibold text-white hover:bg-slate-800"
-  >
-    Weekday Board
-  </Link>
-
-  <Link
-    href="/runs/saturday"
-    className="inline-flex rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
-  >
-    Saturday Board
-  </Link>
-
-  <Link
-    href="/pick"
-    className="inline-flex rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700"
-  >
-    Weekly Pick
-  </Link>
-</div>
-        </div>
+                <tbody>
+                  {drivers.map((driver, index) => (
+                    <tr key={driver.id} className="border-b">
+                      <td className="p-2 font-bold">{index + 1}</td>
+                      <td className="p-2">{driver.full_name}</td>
+                      <td className="p-2">{driver.badge_number}</td>
+                      <td className="p-2">{driver.garage}</td>
+                      <td className="p-2">{driver.hire_date}</td>
+                      <td className="p-2 capitalize">{driver.role}</td>
+                      <td className="p-2">
+                        {driver.badge_number === "4021" ? (
+                          <span className="text-xs font-semibold text-slate-400">
+                            Protected
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              deleteDriver(driver.id, driver.badge_number)
+                            }
+                            className="rounded-lg bg-red-600 px-3 py-1 text-xs font-bold text-white hover:bg-red-700"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );
