@@ -1,5 +1,6 @@
 "use client";
 
+import AppNav from "@/components/AppNav";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -25,11 +26,23 @@ export default function DashboardPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const user = localStorage.getItem("currentUser");
-    if (user) setCurrentUser(JSON.parse(user));
+  const user = localStorage.getItem("currentUser");
 
-    loadDrivers();
-  }, []);
+  if (!user) {
+    window.location.href = "/login";
+    return;
+  }
+
+  const parsedUser = JSON.parse(user);
+
+  if (parsedUser.role !== "clerk") {
+    window.location.href = "/runs";
+    return;
+  }
+
+  setCurrentUser(parsedUser);
+  loadDrivers();
+}, []);
 
   async function loadDrivers() {
     setLoading(true);
@@ -106,6 +119,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-slate-100 p-4 text-slate-900 sm:p-6">
+  <AppNav />
       <div className="mx-auto max-w-6xl space-y-6">
         <section className="rounded-2xl bg-white p-6 shadow">
           <h1 className="text-2xl font-bold">Clerk Dashboard</h1>

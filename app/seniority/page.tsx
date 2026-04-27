@@ -1,5 +1,5 @@
 import Link from "next/link";
-
+import AppNav from "@/components/AppNav";
 const drivers = [
   {
     rank: 213,
@@ -61,6 +61,7 @@ export default async function SeniorityPage({
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10">
+      <AppNav />
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>

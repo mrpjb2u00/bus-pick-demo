@@ -2,13 +2,24 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+
+type Driver = {
+  id: string;
+  badge_number: string;
+  full_name: string;
+  garage: "QG" | "BH";
+  hire_date: string;
+  role: "driver" | "clerk";
+  is_active: boolean;
+};
 
 export default function LoginPage() {
   const router = useRouter();
   const [badgeNumber, setBadgeNumber] = useState("");
   const [error, setError] = useState("");
 
-  function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
 
@@ -19,22 +30,37 @@ export default function LoginPage() {
       return;
     }
 
-    if (badge === "4021") {
-      localStorage.setItem(
-        "currentUser",
-        JSON.stringify({
-          badgeNumber: "4021",
-          name: "Paul Browner",
-          role: "clerk",
-          garage: "QG",
-        })
-      );
+    const { data, error } = await supabase
+      .from("drivers")
+      .select("*")
+      .eq("badge_number", badge)
+      .eq("is_active", true)
+      .single();
 
-      router.push("/dashboard");
+    if (error || !data) {
+      setError("Badge number not found. Please check your badge number.");
       return;
     }
 
-    setError("Badge number not found yet. Drivers will be added by the clerk later.");
+    const driver = data as Driver;
+
+    localStorage.setItem(
+      "currentUser",
+      JSON.stringify({
+        id: driver.id,
+        badge_number: driver.badge_number,
+        full_name: driver.full_name,
+        name: driver.full_name,
+        role: driver.role,
+        garage: driver.garage,
+      })
+    );
+
+    if (driver.role === "clerk") {
+      router.push("/dashboard");
+    } else {
+      router.push("/runs");
+    }
   }
 
   return (
