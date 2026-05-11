@@ -285,13 +285,20 @@ setChoices(normalizedChoices);
       .order("pick_date", { ascending: true })
       .order("pick_time", { ascending: true });
 
-    setAssignments(
-      ((assignmentData || []) as Assignment[]).filter(
-        (item) =>
-          pickData.pick_type === "system" ||
-          item.workers?.garage_code === garageCode
-      )
-    );
+    const normalizedAssignments = (assignmentData || []).map((item: any) => ({
+  ...item,
+  workers: Array.isArray(item.workers)
+    ? item.workers[0] || null
+    : item.workers,
+})) as Assignment[];
+
+setAssignments(
+  normalizedAssignments.filter(
+    (item) =>
+      pickData.pick_type === "system" ||
+      item.workers?.garage_code === garageCode
+  )
+);
 
     const { data: runData } = await supabase
       .from("runs")
