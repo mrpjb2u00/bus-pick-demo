@@ -249,7 +249,15 @@ export default function LivePickPage() {
         if (choiceError) {
           setErrorMessage(choiceError.message);
         } else {
-          setChoices((choiceData || []) as Choice[]);
+          const normalizedChoices = (choiceData || []).map((choice: any) => ({
+  ...choice,
+  runs: Array.isArray(choice.runs) ? choice.runs[0] || null : choice.runs,
+  holiday_board_slots: Array.isArray(choice.holiday_board_slots)
+    ? choice.holiday_board_slots[0] || null
+    : choice.holiday_board_slots,
+})) as Choice[];
+
+setChoices(normalizedChoices);
         }
       } else {
         setChoices([]);
