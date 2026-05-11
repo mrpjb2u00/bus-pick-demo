@@ -9,7 +9,6 @@ import {
   Radio,
   RefreshCw,
   UserCheck,
-  UserRound,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -30,18 +29,20 @@ type PickEvent = {
   pick_type: string | null;
 };
 
+type Worker = {
+  id: string;
+  badge_number: string;
+  full_name: string;
+  garage_code: string;
+  seniority_rank: number | null;
+};
+
 type Assignment = {
   id: string;
   pick_date: string;
   pick_time: string;
   pick_status: string;
-  workers: {
-    id: string;
-    badge_number: string;
-    full_name: string;
-    garage_code: string;
-    seniority_rank: number | null;
-  } | null;
+  workers: Worker | null;
 };
 
 type Choice = {
@@ -65,6 +66,26 @@ type Choice = {
     selection_status: string;
   } | null;
 };
+
+function normalizeWorker(workerValue: unknown): Worker | null {
+  if (!workerValue) return null;
+
+  if (Array.isArray(workerValue)) {
+    return (workerValue[0] as Worker) || null;
+  }
+
+  return workerValue as Worker;
+}
+
+function normalizeAssignment(item: any): Assignment {
+  return {
+    id: item.id,
+    pick_date: item.pick_date,
+    pick_time: item.pick_time,
+    pick_status: item.pick_status,
+    workers: normalizeWorker(item.workers),
+  };
+}
 
 export default function LivePickPage() {
   const router = useRouter();
@@ -139,8 +160,8 @@ export default function LivePickPage() {
       return;
     }
 
-    setProfile(profileData);
-    setPickEvent(pickData);
+    setProfile(profileData as Profile);
+    setPickEvent(pickData as PickEvent);
 
     const garageCode = profileData.garage_code || "QG";
 
@@ -171,18 +192,15 @@ export default function LivePickPage() {
       return;
     }
 
-    const normalizedAssignments = (assignmentData || []).map((item: any) => ({
-  ...item,
-  workers: Array.isArray(item.workers)
-    ? item.workers[0]
-    : item.workers,
-})) as Assignment[];
+    const normalizedAssignments = (assignmentData || []).map((item) =>
+      normalizeAssignment(item)
+    );
 
-const visibleAssignments = normalizedAssignments.filter(
-  (item) =>
-    pickData.pick_type === "system" ||
-    item.workers?.garage_code === garageCode
-);
+    const visibleAssignments = normalizedAssignments.filter(
+      (item) =>
+        pickData.pick_type === "system" ||
+        item.workers?.garage_code === garageCode
+    );
 
     setAssignments(visibleAssignments);
 
@@ -310,18 +328,6 @@ const visibleAssignments = normalizedAssignments.filter(
     }
 
     if (choice.choice_type === "be_off") {
-      const { error } = await supabase
-        .from("holiday_pick_limits")
-        .update({
-          be_off_used_slots: supabase.rpc ? undefined : undefined,
-        })
-        .eq("pick_event_id", pickEvent.id)
-        .eq("garage_code", currentAssignment.workers.garage_code);
-
-      if (error) {
-        // This placeholder update is intentionally avoided below.
-      }
-
       const { data: limitData } = await supabase
         .from("holiday_pick_limits")
         .select("be_off_used_slots")
