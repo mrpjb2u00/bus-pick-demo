@@ -4,112 +4,154 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-type Driver = {
-  id: string;
-  badge_number: string;
-  full_name: string;
-  garage: "QG" | "BH";
-  hire_date: string;
-  role: "driver" | "clerk";
-  is_active: boolean;
-};
-
 export default function LoginPage() {
   const router = useRouter();
+
   const [badgeNumber, setBadgeNumber] = useState("");
-  const [error, setError] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
 
-    const badge = badgeNumber.trim();
+    setLoading(true);
+    setErrorMessage("");
 
-    if (!badge) {
-      setError("Please enter your badge number.");
-      return;
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("badge_number", badgeNumber)
+        .single();
+
+      if (profileError || !profileData) {
+        setErrorMessage("Badge number not found.");
+        setLoading(false);
+        return;
+      }
+
+      const email =
+        profileData.email ||
+        `${profileData.badge_number}@transitops.local`;
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        setErrorMessage(authError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (
+        profileData.role === "driver" ||
+        profileData.role === "worker"
+      ) {
+        router.push("/pick");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (error) {
+      setErrorMessage("Something went wrong.");
     }
 
-    const { data, error } = await supabase
-      .from("drivers")
-      .select("*")
-      .eq("badge_number", badge)
-      .eq("is_active", true)
-      .single();
-
-    if (error || !data) {
-      setError("Badge number not found. Please check your badge number.");
-      return;
-    }
-
-    const driver = data as Driver;
-
-    localStorage.setItem(
-      "currentUser",
-      JSON.stringify({
-        id: driver.id,
-        badge_number: driver.badge_number,
-        full_name: driver.full_name,
-        name: driver.full_name,
-        role: driver.role,
-        garage: driver.garage,
-      })
-    );
-
-    if (driver.role === "clerk") {
-      router.push("/dashboard");
-    } else {
-      router.push("/runs");
-    }
+    setLoading(false);
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10 text-slate-900">
-      <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">
-          Driver / Clerk Login
-        </p>
+    <main className="relative min-h-screen overflow-hidden bg-[#07111f]">
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage: "url('/images/metro-bus.jpg')",
+        }}
+      />
 
-        <h1 className="mt-3 text-3xl font-bold text-slate-900">
-          Sign in with badge number
-        </h1>
+      <div className="absolute inset-0 bg-[#07111f]/75" />
 
-        <p className="mt-3 text-sm text-slate-600">
-          Enter your employee badge number to access the pick system.
-        </p>
+      <section className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md rounded-3xl border border-white/20 bg-white/95 p-6 shadow-2xl backdrop-blur sm:p-8">
+          <div className="mb-6 text-center">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.35em] text-[#1597d3] sm:text-xs">
+              Transit Ops
+            </p>
 
-        <form onSubmit={handleLogin} className="mt-6 space-y-4">
-          <div>
-            <label
-              htmlFor="badgeNumber"
-              className="mb-2 block text-sm font-semibold text-slate-800"
-            >
-              Badge Number
-            </label>
+            <h1 className="mt-3 text-4xl font-black leading-none text-[#07111f]">
+              Bus Pick
+            </h1>
 
-            <input
-              id="badgeNumber"
-              value={badgeNumber}
-              onChange={(e) => setBadgeNumber(e.target.value)}
-              inputMode="numeric"
-              placeholder="Enter badge number"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-200"
-            />
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Sign in using your badge number and password.
+            </p>
           </div>
 
-          {error && (
-            <div className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700">
-              {error}
+          {errorMessage && (
+            <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              {errorMessage}
             </div>
           )}
 
-          <button
-            type="submit"
-            className="w-full rounded-xl bg-blue-600 px-5 py-3 text-base font-bold text-white shadow hover:bg-blue-700"
-          >
-            Login
-          </button>
-        </form>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="mb-2 block text-xs font-extrabold uppercase tracking-[0.25em] text-slate-500">
+                Badge Number
+              </label>
+
+              <input
+                type="text"
+                value={badgeNumber}
+                onChange={(e) => setBadgeNumber(e.target.value)}
+                placeholder="Enter badge number"
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-950 outline-none transition focus:border-[#1597d3] focus:ring-4 focus:ring-[#1597d3]/20"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-extrabold uppercase tracking-[0.25em] text-slate-500">
+                Password
+              </label>
+
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-950 outline-none transition focus:border-[#1597d3] focus:ring-4 focus:ring-[#1597d3]/20"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-2xl bg-[#1597d3] px-5 py-4 text-base font-extrabold text-white shadow-lg transition hover:bg-[#0f7fb4] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {loading ? "Signing In..." : "Sign In"}
+            </button>
+          </form>
+
+          <div className="mt-6 rounded-2xl bg-[#07111f] p-4 text-white">
+            <p className="text-sm font-extrabold text-[#b9ecff]">
+              Demo Access
+            </p>
+
+            <div className="mt-3 space-y-2 text-sm text-slate-200">
+              <p>
+                <span className="font-bold text-white">Driver:</span> Routes,
+                choices, and pick order
+              </p>
+
+              <p>
+                <span className="font-bold text-white">Clerk/Admin:</span>{" "}
+                Dashboard, runs, workers, and pick management
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
   );
