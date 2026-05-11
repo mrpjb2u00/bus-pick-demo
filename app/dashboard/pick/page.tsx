@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, Clock, ListChecks, Route } from "lucide-react";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Clock,
+  ListChecks,
+  Route,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -12,6 +19,14 @@ type Profile = {
   full_name: string | null;
   role: string;
   garage_code: string | null;
+  is_active: boolean | null;
+};
+
+type Worker = {
+  badge_number: string;
+  full_name: string;
+  garage_code: string;
+  seniority_rank: number | null;
 };
 
 type PickEvent = {
@@ -26,12 +41,7 @@ type PickAssignment = {
   pick_date: string;
   pick_time: string;
   pick_status: string;
-  workers: {
-    badge_number: string;
-    full_name: string;
-    garage_code: string;
-    seniority_rank: number | null;
-  } | null;
+  workers: Worker | null;
 };
 
 type Run = {
@@ -58,7 +68,27 @@ type Run = {
 type ViewMode = "pick-list" | "runs";
 type RunFilter = "all" | "day" | "late" | "split" | "extra";
 
-export default function PickPage() {
+function normalizeWorker(workerValue: unknown): Worker | null {
+  if (!workerValue) return null;
+
+  if (Array.isArray(workerValue)) {
+    return (workerValue[0] as Worker) || null;
+  }
+
+  return workerValue as Worker;
+}
+
+function normalizeAssignment(item: any): PickAssignment {
+  return {
+    id: item.id,
+    pick_date: item.pick_date,
+    pick_time: item.pick_time,
+    pick_status: item.pick_status,
+    workers: normalizeWorker(item.workers),
+  };
+}
+
+export default function DashboardPickPage() {
   const router = useRouter();
 
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -70,8 +100,8 @@ export default function PickPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const isSystemPick = pickEvent?.pick_type === "system";
   const userGarage = profile?.garage_code || "QG";
+  const isSystemPick = pickEvent?.pick_type === "system";
   const isSaturday = pickEvent?.service_schedule === "saturday";
 
   const visibleRuns = useMemo(() => {
@@ -83,16 +113,6 @@ export default function PickPage() {
     if (activeFilter === "all") return visibleRuns;
     return visibleRuns.filter((run) => run.run_category === activeFilter);
   }, [visibleRuns, activeFilter]);
-
-  const qgRuns = useMemo(
-    () => filteredRuns.filter((run) => run.garage_code === "QG"),
-    [filteredRuns]
-  );
-
-  const bhRuns = useMemo(
-    () => filteredRuns.filter((run) => run.garage_code === "BH"),
-    [filteredRuns]
-  );
 
   useEffect(() => {
     async function loadPage() {
@@ -108,89 +128,97 @@ export default function PickPage() {
         return;
       }
 
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from("user_profiles")
         .select("*")
         .eq("id", user.id)
         .single();
 
-      if (!profileData) {
+      if (profileError || !profileData) {
         setErrorMessage("Could not load your profile.");
         setLoading(false);
         return;
       }
 
-      const { data: pickData } = await supabase
+      const { data: pickData, error: pickError } = await supabase
         .from("pick_events")
         .select("*")
         .eq("title", "July 4th Holiday Pick")
         .maybeSingle();
 
-      setProfile(profileData);
-      setPickEvent(pickData || null);
+      setProfile(profileData as Profile);
 
-      if (pickData?.id) {
-        const { data: assignmentData, error: assignmentError } = await supabase
-          .from("pick_assignments")
-          .select(
-            `
-            id,
-            pick_date,
-            pick_time,
-            pick_status,
-            workers (
-              badge_number,
-              full_name,
-              garage_code,
-              seniority_rank
-            )
-          `
-          )
-          .eq("pick_event_id", pickData.id)
-          .order("pick_date", { ascending: true })
-          .order("pick_time", { ascending: true });
-
-        if (assignmentError) {
-          setErrorMessage(assignmentError.message);
-        } else {
-          const isSystem = pickData.pick_type === "system";
-          const userGarageCode = profileData.garage_code || "QG";
-
-          const visibleAssignments = (assignmentData || []).filter(
-            (assignment) =>
-              isSystem ||
-              assignment.workers?.garage_code === userGarageCode
-          );
-
-          setAssignments(visibleAssignments as PickAssignment[]);
-        }
-
-        const { data: runData, error: runError } = await supabase
-          .from("runs")
-          .select("*")
-          .eq("pick_event_id", pickData.id);
-
-        if (runError) {
-          setErrorMessage(runError.message);
-        } else {
-          const sortedRuns = [...(runData || [])].sort((a, b) => {
-            const garageCompare = a.garage_code.localeCompare(b.garage_code);
-            if (garageCompare !== 0) return garageCompare;
-
-            const aRun = Number(a.run_number);
-            const bRun = Number(b.run_number);
-
-            if (Number.isNaN(aRun) || Number.isNaN(bRun)) {
-              return String(a.run_number).localeCompare(String(b.run_number));
-            }
-
-            return aRun - bRun;
-          });
-
-          setRuns(sortedRuns as Run[]);
-        }
+      if (pickError || !pickData) {
+        setErrorMessage("Could not load the July 4th Holiday Pick.");
+        setLoading(false);
+        return;
       }
 
+      setPickEvent(pickData as PickEvent);
+
+      const garageCode = profileData.garage_code || "QG";
+      const isSystem = pickData.pick_type === "system";
+
+      const { data: assignmentData, error: assignmentError } = await supabase
+        .from("pick_assignments")
+        .select(
+          `
+          id,
+          pick_date,
+          pick_time,
+          pick_status,
+          workers (
+            badge_number,
+            full_name,
+            garage_code,
+            seniority_rank
+          )
+        `
+        )
+        .eq("pick_event_id", pickData.id)
+        .order("pick_date", { ascending: true })
+        .order("pick_time", { ascending: true });
+
+      if (assignmentError) {
+        setErrorMessage(assignmentError.message);
+        setLoading(false);
+        return;
+      }
+
+      const normalizedAssignments = (assignmentData || []).map((item) =>
+        normalizeAssignment(item)
+      );
+
+      const visibleAssignments = normalizedAssignments.filter(
+        (assignment) =>
+          isSystem || assignment.workers?.garage_code === garageCode
+      );
+
+      setAssignments(visibleAssignments);
+
+      const { data: runData, error: runError } = await supabase
+        .from("runs")
+        .select("*")
+        .eq("pick_event_id", pickData.id);
+
+      if (runError) {
+        setErrorMessage(runError.message);
+        setLoading(false);
+        return;
+      }
+
+      const sortedRuns = [...((runData || []) as Run[])].sort((a, b) => {
+        const aRun = Number(a.run_number);
+        const bRun = Number(b.run_number);
+
+        if (Number.isNaN(aRun) || Number.isNaN(bRun)) {
+          return String(a.run_number).localeCompare(String(b.run_number));
+        }
+
+        return aRun - bRun;
+      });
+
+      setRuns(sortedRuns);
       setLoading(false);
     }
 
@@ -199,16 +227,16 @@ export default function PickPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        Loading pick screen...
+      <main className="min-h-screen bg-[#07111f] text-white flex items-center justify-center">
+        Loading pick preview...
       </main>
     );
   }
 
   if (!profile) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        Error loading profile.
+      <main className="min-h-screen bg-[#07111f] text-white flex items-center justify-center">
+        Profile not found.
       </main>
     );
   }
@@ -217,120 +245,108 @@ export default function PickPage() {
     <DashboardLayout profile={profile}>
       <section className="mb-6 flex items-start justify-between gap-6">
         <div>
-          <p className="text-sm uppercase tracking-[0.25em] text-blue-700 font-bold">
-            Driver Pick Screen
+          <Link
+            href="/dashboard/holiday-pick"
+            className="mb-4 inline-flex items-center gap-2 text-sm font-black text-[#1597d3]"
+          >
+            <ArrowLeft size={18} />
+            Back to Holiday Pick
+          </Link>
+
+          <p className="text-sm uppercase tracking-[0.25em] text-[#1597d3] font-black">
+            Clerk Pick Preview
           </p>
 
-          <h2 className="text-3xl font-bold text-slate-950 mt-2">
-            {pickEvent?.title || "No Upcoming Pick"}
-          </h2>
+          <h1 className="mt-2 text-4xl font-black text-[#07111f]">
+            {pickEvent?.title || "July 4th Holiday Pick"}
+          </h1>
 
-          <p className="text-slate-600 mt-2">
-            View pick order and available runs. Drivers only see their assigned
-            garage unless this is a System Pick.
+          <p className="mt-3 max-w-3xl text-slate-600">
+            Preview the driver pick list and available runs for your garage.
+            Drivers only see their assigned garage unless this is a System Pick.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm text-right">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-bold">
+        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-right shadow-sm">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-black">
             Your Garage
           </p>
-          <p className="text-xl font-bold text-slate-950 mt-1">
+          <p className="mt-1 text-2xl font-black text-[#07111f]">
             {profile.garage_code || "N/A"}
           </p>
         </div>
       </section>
 
       {errorMessage && (
-        <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+        <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold text-red-700">
           {errorMessage}
         </div>
       )}
 
-      {!pickEvent ? (
-        <section className="flex items-center justify-center min-h-[55vh]">
-          <div className="max-w-xl rounded-2xl bg-white p-8 shadow-sm border border-slate-200 text-center">
-            <h2 className="text-2xl font-bold text-slate-950">
-              No Upcoming Pick
-            </h2>
+      <section className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <InfoCard
+          icon={<CalendarDays />}
+          label="Pick Date"
+          value="July 3, 2026"
+          detail="Observed holiday date"
+        />
+        <InfoCard
+          icon={<Clock />}
+          label="Schedule"
+          value={pickEvent?.service_schedule || "Saturday"}
+          detail="Saturday service"
+        />
+        <InfoCard
+          icon={<ListChecks />}
+          label="Pick Assignments"
+          value={String(assignments.length)}
+          detail="Visible for your garage"
+        />
+        <InfoCard
+          icon={<Route />}
+          label="Available Runs"
+          value={String(visibleRuns.length)}
+          detail="Visible for your garage"
+        />
+      </section>
 
-            <p className="text-slate-600 mt-3">
-              No upcoming pick is currently available. Please check back later or
-              contact the clerk.
-            </p>
-          </div>
-        </section>
+      <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+        <div className="flex w-fit gap-2">
+          <button
+            onClick={() => setViewMode("pick-list")}
+            className={`rounded-xl px-5 py-3 text-sm font-black ${
+              viewMode === "pick-list"
+                ? "bg-[#07111f] text-white"
+                : "bg-slate-100 text-slate-700"
+            }`}
+          >
+            Pick List
+          </button>
+
+          <button
+            onClick={() => setViewMode("runs")}
+            className={`rounded-xl px-5 py-3 text-sm font-black ${
+              viewMode === "runs"
+                ? "bg-[#07111f] text-white"
+                : "bg-slate-100 text-slate-700"
+            }`}
+          >
+            Runs
+          </button>
+        </div>
+      </section>
+
+      {viewMode === "pick-list" ? (
+        <PickListTable assignments={assignments} />
       ) : (
-        <>
-          <section className="mb-5 grid grid-cols-4 gap-5">
-            <InfoCard
-              icon={<CalendarDays />}
-              label="Pick Date"
-              value="July 3, 2026"
-              detail="Observed holiday date"
-            />
-
-            <InfoCard
-              icon={<Clock />}
-              label="Schedule"
-              value={pickEvent.service_schedule || "Saturday"}
-              detail="Saturday runs use sky-blue styling"
-            />
-
-            <InfoCard
-              icon={<ListChecks />}
-              label="Pick Assignments"
-              value={String(assignments.length)}
-              detail="Visible for your garage"
-            />
-
-            <InfoCard
-              icon={<Route />}
-              label="Available Runs"
-              value={String(visibleRuns.length)}
-              detail="Visible for your garage"
-            />
-          </section>
-
-          <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm inline-flex gap-2">
-            <button
-              onClick={() => setViewMode("pick-list")}
-              className={`rounded-xl px-5 py-3 text-sm font-bold transition ${
-                viewMode === "pick-list"
-                  ? "bg-slate-950 text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              Pick List
-            </button>
-
-            <button
-              onClick={() => setViewMode("runs")}
-              className={`rounded-xl px-5 py-3 text-sm font-bold transition ${
-                viewMode === "runs"
-                  ? "bg-slate-950 text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              Runs
-            </button>
-          </section>
-
-          {viewMode === "pick-list" ? (
-            <PickListTable assignments={assignments} />
-          ) : (
-            <RunsView
-              isSaturday={isSaturday}
-              activeFilter={activeFilter}
-              setActiveFilter={setActiveFilter}
-              visibleRuns={visibleRuns}
-              qgRuns={qgRuns}
-              bhRuns={bhRuns}
-              userGarage={userGarage}
-              isSystemPick={isSystemPick}
-            />
-          )}
-        </>
+        <RunsPreview
+          isSaturday={isSaturday}
+          activeFilter={activeFilter}
+          setActiveFilter={setActiveFilter}
+          visibleRuns={visibleRuns}
+          filteredRuns={filteredRuns}
+          garageCode={profile.garage_code || "QG"}
+        />
       )}
     </DashboardLayout>
   );
@@ -349,50 +365,51 @@ function InfoCard({
 }) {
   return (
     <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
-      <div className="mb-3 text-blue-700">{icon}</div>
-      <p className="text-sm font-bold text-slate-600">{label}</p>
-      <p className="text-2xl font-extrabold text-slate-950 mt-2">{value}</p>
-      <p className="text-sm text-slate-500 mt-1">{detail}</p>
+      <div className="text-[#1597d3]">{icon}</div>
+      <p className="mt-3 text-xs font-black uppercase tracking-[0.2em] text-slate-500">
+        {label}
+      </p>
+      <p className="mt-2 text-2xl font-black text-[#07111f]">{value}</p>
+      <p className="mt-1 text-sm text-slate-600">{detail}</p>
     </div>
   );
 }
 
-function PickListTable({ assignments }: { assignments: PickAssignment[] }) {
+function PickListTable({
+  assignments,
+}: {
+  assignments: PickAssignment[];
+}) {
   return (
-    <section className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6">
-      <div className="mb-5">
-        <h3 className="text-xl font-bold text-slate-950">Pick List</h3>
-        <p className="text-sm text-slate-600 mt-1">
-          Drivers are listed in scheduled pick order.
-        </p>
-      </div>
+    <section className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
+      <h2 className="text-2xl font-black text-[#07111f]">Pick List</h2>
+      <p className="mt-1 text-sm text-slate-600">
+        Drivers are listed in scheduled pick order.
+      </p>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200">
-        <table className="w-full text-sm">
+      <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200">
+        <table className="w-full min-w-[760px] text-sm">
           <thead className="bg-slate-50 text-slate-600">
             <tr>
-              <th className="text-left p-3 font-bold">Pick Time</th>
-              <th className="text-left p-3 font-bold">Driver</th>
-              <th className="text-left p-3 font-bold">Badge</th>
-              <th className="text-left p-3 font-bold">Garage</th>
-              <th className="text-left p-3 font-bold">Seniority</th>
-              <th className="text-left p-3 font-bold">Status</th>
+              <th className="p-3 text-left font-black">Pick Time</th>
+              <th className="p-3 text-left font-black">Driver</th>
+              <th className="p-3 text-left font-black">Badge</th>
+              <th className="p-3 text-left font-black">Garage</th>
+              <th className="p-3 text-left font-black">Seniority</th>
+              <th className="p-3 text-left font-black">Status</th>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-slate-200">
             {assignments.length === 0 ? (
               <tr>
-                <td
-                  colSpan={6}
-                  className="p-6 text-center text-slate-500 font-medium"
-                >
+                <td colSpan={6} className="p-6 text-center text-slate-500">
                   No drivers are scheduled for this pick yet.
                 </td>
               </tr>
             ) : (
               assignments.map((assignment) => (
-                <tr key={assignment.id} className="hover:bg-slate-50">
+                <tr key={assignment.id}>
                   <td className="p-3 font-bold text-slate-900">
                     {formatDate(assignment.pick_date)} ·{" "}
                     {formatTime(assignment.pick_time)}
@@ -410,7 +427,7 @@ function PickListTable({ assignments }: { assignments: PickAssignment[] }) {
                     {assignment.workers?.seniority_rank || "—"}
                   </td>
                   <td className="p-3">
-                    <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
+                    <span className={statusClass(assignment.pick_status)}>
                       {formatStatus(assignment.pick_status)}
                     </span>
                   </td>
@@ -424,235 +441,110 @@ function PickListTable({ assignments }: { assignments: PickAssignment[] }) {
   );
 }
 
-function RunsView({
+function RunsPreview({
   isSaturday,
   activeFilter,
   setActiveFilter,
   visibleRuns,
-  qgRuns,
-  bhRuns,
-  userGarage,
-  isSystemPick,
+  filteredRuns,
+  garageCode,
 }: {
   isSaturday: boolean;
   activeFilter: RunFilter;
   setActiveFilter: (filter: RunFilter) => void;
   visibleRuns: Run[];
-  qgRuns: Run[];
-  bhRuns: Run[];
-  userGarage: string;
-  isSystemPick: boolean;
+  filteredRuns: Run[];
+  garageCode: string;
 }) {
   return (
     <section
-      className={`rounded-2xl border shadow-sm p-6 ${
-        isSaturday ? "bg-sky-100 border-sky-300" : "bg-white border-slate-200"
+      className={`rounded-2xl border p-5 shadow-sm ${
+        isSaturday
+          ? "border-[#1597d3] bg-[#dff6ff]"
+          : "border-slate-200 bg-white"
       }`}
     >
-      <div className="mb-5">
-        <h3 className="text-xl font-bold text-slate-950">Available Runs</h3>
-        <p className="text-sm text-slate-700 mt-1">
-          Full run sheet view. Admin controls are hidden from the driver view.
-        </p>
-      </div>
-
-      <RunFilterBar
-        activeFilter={activeFilter}
-        onChange={setActiveFilter}
-        runs={visibleRuns}
-      />
-
-      <div className="mt-5 space-y-6">
-        {(isSystemPick || userGarage === "QG") && (
-          <RunSheetSection
-            title="Runs List Queensgate Saturday"
-            garageLabel="Queensgate Division"
-            garageCode="QG"
-            runs={qgRuns}
-            isSaturday={isSaturday}
-            activeFilter={activeFilter}
-          />
-        )}
-
-        {(isSystemPick || userGarage === "BH") && (
-          <RunSheetSection
-            title="Runs List Bond Hill Saturday"
-            garageLabel="Bond Hill Division"
-            garageCode="BH"
-            runs={bhRuns}
-            isSaturday={isSaturday}
-            activeFilter={activeFilter}
-          />
-        )}
-      </div>
-    </section>
-  );
-}
-
-function RunFilterBar({
-  activeFilter,
-  onChange,
-  runs,
-}: {
-  activeFilter: RunFilter;
-  onChange: (filter: RunFilter) => void;
-  runs: Run[];
-}) {
-  const filters: { label: string; value: RunFilter }[] = [
-    { label: "All", value: "all" },
-    { label: "Day Runs", value: "day" },
-    { label: "Late Runs", value: "late" },
-    { label: "Split Runs", value: "split" },
-    { label: "Extras", value: "extra" },
-  ];
-
-  function countFor(filter: RunFilter) {
-    if (filter === "all") return runs.length;
-    return runs.filter((run) => run.run_category === filter).length;
-  }
-
-  return (
-    <div className="rounded-2xl border border-slate-300 bg-white p-3">
-      <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.2em] text-slate-500">
-        Filter Runs
-      </p>
-
-      <div className="flex flex-wrap gap-2">
-        {filters.map((filter) => {
-          const isActive = activeFilter === filter.value;
-
-          return (
-            <button
-              key={filter.value}
-              onClick={() => onChange(filter.value)}
-              className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
-                isActive
-                  ? "bg-slate-950 text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              {filter.label} ({countFor(filter.value)})
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function RunSheetSection({
-  title,
-  garageLabel,
-  garageCode,
-  runs,
-  isSaturday,
-  activeFilter,
-}: {
-  title: string;
-  garageLabel: string;
-  garageCode: string;
-  runs: Run[];
-  isSaturday: boolean;
-  activeFilter: RunFilter;
-}) {
-  return (
-    <div className="overflow-hidden rounded-xl border border-slate-300 bg-white">
-      <div
-        className={`px-4 py-3 border-b border-slate-300 ${
-          isSaturday ? "bg-sky-200" : "bg-slate-100"
-        }`}
-      >
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="font-extrabold text-slate-950 uppercase tracking-[0.2em] text-sm">
-              {title}
-            </p>
-            <p className="text-sm text-slate-700 mt-1">
-              Southwest Ohio Regional Transit Authority / METRO / {garageLabel}
-            </p>
-          </div>
-
-          <span className="rounded-full bg-white px-3 py-1 text-xs font-extrabold text-slate-700 border border-slate-300">
-            {garageCode}
-          </span>
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-[#07111f]">
+            Available Runs
+          </h2>
+          <p className="mt-1 text-sm text-slate-700">
+            Full run sheet preview for {garageCode}.
+          </p>
         </div>
+
+        <select
+          value={activeFilter}
+          onChange={(e) => setActiveFilter(e.target.value as RunFilter)}
+          className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-[#07111f]"
+        >
+          <option value="all">All ({visibleRuns.length})</option>
+          <option value="day">
+            Day ({visibleRuns.filter((run) => run.run_category === "day").length})
+          </option>
+          <option value="late">
+            Late ({visibleRuns.filter((run) => run.run_category === "late").length})
+          </option>
+          <option value="split">
+            Split ({visibleRuns.filter((run) => run.run_category === "split").length})
+          </option>
+          <option value="extra">
+            Extra ({visibleRuns.filter((run) => run.run_category === "extra").length})
+          </option>
+        </select>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1350px] text-xs">
-          <thead className="bg-slate-50 text-slate-700 border-b border-slate-300">
+      <div className="overflow-x-auto rounded-xl border border-slate-300 bg-white">
+        <table className="w-full min-w-[1000px] text-xs">
+          <thead className="border-b-2 border-slate-900 bg-white">
             <tr>
-              <th className="p-2 text-left font-extrabold">RUN</th>
-              <th className="p-2 text-left font-extrabold">RTE</th>
-              <th className="p-2 text-left font-extrabold">BLK</th>
-              <th className="p-2 text-left font-extrabold">ON LOC</th>
-              <th className="p-2 text-left font-extrabold">ON TIME</th>
-              <th className="p-2 text-left font-extrabold">OFF TIME</th>
-              <th className="p-2 text-left font-extrabold">OFF LOC</th>
-              <th className="p-2 text-left font-extrabold">PIECE</th>
-              <th className="p-2 text-left font-extrabold">PLATF</th>
-              <th className="p-2 text-left font-extrabold">TOTAL</th>
-              <th className="p-2 text-left font-extrabold">SPREAD</th>
-              <th className="p-2 text-left font-extrabold">MKUP</th>
-              <th className="p-2 text-left font-extrabold">LINE PREM</th>
-              <th className="p-2 text-left font-extrabold">TYPE</th>
-              <th className="p-2 text-left font-extrabold">STATUS</th>
+              <th className="px-3 py-3 text-left font-black">RUN</th>
+              <th className="px-3 py-3 text-left font-black">RTE</th>
+              <th className="px-3 py-3 text-left font-black">BLK</th>
+              <th className="px-3 py-3 text-left font-black">ON LOC</th>
+              <th className="px-3 py-3 text-left font-black">ON TIME</th>
+              <th className="px-3 py-3 text-left font-black">OFF TIME</th>
+              <th className="px-3 py-3 text-left font-black">OFF LOC</th>
+              <th className="px-3 py-3 text-left font-black">PIECE</th>
+              <th className="px-3 py-3 text-left font-black">PLATF</th>
+              <th className="px-3 py-3 text-left font-black">TOTAL</th>
+              <th className="px-3 py-3 text-left font-black">TYPE</th>
+              <th className="px-3 py-3 text-left font-black">STATUS</th>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-slate-200">
-            {runs.length === 0 ? (
+          <tbody>
+            {filteredRuns.length === 0 ? (
               <tr>
-                <td
-                  colSpan={15}
-                  className="p-6 text-center text-slate-500 font-medium"
-                >
-                  No {garageCode} {filterLabel(activeFilter)} runs found.
+                <td colSpan={12} className="p-6 text-center text-slate-500">
+                  No runs found.
                 </td>
               </tr>
             ) : (
-              runs.map((run) => (
-                <tr key={run.id} className="hover:bg-sky-50">
-                  <td className="p-2 font-extrabold text-slate-950">
-                    {run.run_number}
-                  </td>
-                  <td className="p-2 text-slate-800">{run.route || "—"}</td>
-                  <td className="p-2 text-slate-800">{run.block || "—"}</td>
-                  <td className="p-2 text-slate-800">
-                    {run.on_location || "—"}
-                  </td>
-                  <td className="p-2 text-slate-800">{run.on_time || "—"}</td>
-                  <td className="p-2 text-slate-800">{run.off_time || "—"}</td>
-                  <td className="p-2 text-slate-800">
-                    {run.off_location || "—"}
-                  </td>
-                  <td className="p-2 text-slate-800">
-                    {run.piece_time || "—"}
-                  </td>
-                  <td className="p-2 text-slate-800">
-                    {run.platform_time || "—"}
-                  </td>
-                  <td className="p-2 font-bold text-slate-900">
-                    {run.total_time || "—"}
-                  </td>
-                  <td className="p-2 text-slate-800">
-                    {run.spread_pay || "—"}
-                  </td>
-                  <td className="p-2 text-slate-800">
-                    {run.markup_time || "—"}
-                  </td>
-                  <td className="p-2 text-slate-800">
-                    {run.line_premium || "—"}
-                  </td>
-                  <td className="p-2">
-                    <span className="rounded-full bg-blue-100 px-2 py-1 text-[11px] font-bold text-blue-700">
-                      {formatCategory(run.run_category)}
-                    </span>
-                  </td>
-                  <td className="p-2">
-                    <span className="rounded-full bg-green-100 px-2 py-1 text-[11px] font-bold text-green-700">
-                      {run.is_active === false ? "Inactive" : "Active"}
-                    </span>
+              filteredRuns.map((run) => (
+                <tr key={run.id} className="border-b border-slate-200">
+                  <td className="px-3 py-3 font-black">{run.run_number}</td>
+                  <td className="px-3 py-3">{run.route || "—"}</td>
+                  <td className="px-3 py-3">{run.block || "—"}</td>
+                  <td className="px-3 py-3">{run.on_location || "—"}</td>
+                  <td className="px-3 py-3">{run.on_time || "—"}</td>
+                  <td className="px-3 py-3">{run.off_time || "—"}</td>
+                  <td className="px-3 py-3">{run.off_location || "—"}</td>
+                  <td className="px-3 py-3">{run.piece_time || "—"}</td>
+                  <td className="px-3 py-3">{run.platform_time || "—"}</td>
+                  <td className="px-3 py-3 font-bold">{run.total_time || "—"}</td>
+                  <td className="px-3 py-3">{formatCategory(run.run_category)}</td>
+                  <td className="px-3 py-3">
+                    {run.is_active === false ? (
+                      <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-700">
+                        Taken
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">
+                        Available
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))
@@ -660,13 +552,12 @@ function RunSheetSection({
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   );
 }
 
 function formatDate(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-  return date.toLocaleDateString("en-US", {
+  return new Date(`${value}T00:00:00`).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -674,10 +565,10 @@ function formatDate(value: string) {
 }
 
 function formatTime(value: string) {
-  const [hourString, minuteString] = value.split(":");
+  const [hour, minute] = value.split(":");
   const date = new Date();
-  date.setHours(Number(hourString));
-  date.setMinutes(Number(minuteString));
+  date.setHours(Number(hour), Number(minute));
+
   return date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -693,19 +584,26 @@ function formatStatus(status: string) {
   return status;
 }
 
+function statusClass(status: string) {
+  if (status === "picking") {
+    return "rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700";
+  }
+
+  if (status === "completed") {
+    return "rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-700";
+  }
+
+  if (status === "skipped" || status === "missed") {
+    return "rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-700";
+  }
+
+  return "rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-700";
+}
+
 function formatCategory(category: string) {
   if (category === "day") return "Day Run";
   if (category === "late") return "Late Run";
   if (category === "split") return "Split Run";
   if (category === "extra") return "Extra";
   return category;
-}
-
-function filterLabel(filter: RunFilter) {
-  if (filter === "all") return "";
-  if (filter === "day") return "Day";
-  if (filter === "late") return "Late";
-  if (filter === "split") return "Split";
-  if (filter === "extra") return "Extra";
-  return "";
 }
